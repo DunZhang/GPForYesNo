@@ -77,7 +77,6 @@ class GPDataSet(Dataset):
         # 获取目标数据
         data_item = self.data[item]
         query, doc, answer, answer_type = data_item["query"], data_item["doc"], data_item["ans"], data_item["ans_type"]
-        doc = doc[:self.conf.max_len - len(query) - 2]
         query_id = self.tokenizer.encode(query, add_special_tokens=True)
         if answer and answer in doc:
             idx = doc.find(answer)
@@ -94,5 +93,9 @@ class GPDataSet(Dataset):
         else:
             doc_id = self.tokenizer.encode(doc, add_special_tokens=False) + [self.tokenizer.sep_token_id]
             start, end = len(doc_id) - 1, len(doc_id) - 1
+        if len(query_id) + len(doc_id) > self.conf.max_len:
+            doc_id = doc_id[:self.conf.max_len - len(query_id)]
+            doc_id.append(self.tokenizer.sep_token_id)
+
         start, end = start + len(query_id), end + len(query_id)
         return query_id, doc_id, start, end, answer_type
