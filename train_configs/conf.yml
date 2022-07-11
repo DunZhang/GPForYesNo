@@ -1,0 +1,18 @@
+batch_size: 32
+data_dir: ./model_data/sim_data
+device: '0'
+ent_type_size: 2
+eval_metrics:
+- acc
+eval_step: 1000
+log_step: 20
+lr: 5.0e-05
+max_len: 64
+num_epoch: 10
+output_dir: ./output/test1
+pretrained_model_dir: ''
+print_input_step: 200
+save_times_per_epoch: -1
+seed: ''
+use_rope: true
+warmup_proportion: 0.1
