@@ -118,13 +118,13 @@ class GPModel(nn.Module):
         token_type_ids = ipt["token_type_ids"].to(self.get_device())
         attention_mask = ipt["attention_mask"].to(self.get_device())
 
-        context_outputs = self.encoder(input_ids, attention_mask, token_type_ids)
+        context_outputs = self.model(input_ids, attention_mask, token_type_ids)
         last_hidden_state = context_outputs.last_hidden_state
         outputs = self.dense_1(last_hidden_state)
         # qw,kw  (batch_size, seq_len, inner_dim)
         qw, kw = outputs[..., ::2], outputs[..., 1::2]  # 从0,1开始间隔为2
-        if self.RoPE:
-            pos = SinusoidalPositionEmbedding(self.inner_dim, 'zero')(outputs)
+        if self.use_rope:
+            pos = SinusoidalPositionEmbedding(self.backbone_model_config.hidden_size, 'zero')(outputs)
             cos_pos = pos[..., 1::2].repeat_interleave(2, dim=-1)
             sin_pos = pos[..., ::2].repeat_interleave(2, dim=-1)
             qw2 = torch.stack([-qw[..., 1::2], qw[..., ::2]], 3)
@@ -134,7 +134,7 @@ class GPModel(nn.Module):
             kw2 = torch.reshape(kw2, kw.shape)
             kw = kw * cos_pos + kw2 * sin_pos
         # logits (batch_size, seq_len, seq_len)
-        logits = torch.einsum('bmd,bnd->bmn', qw, kw) / self.inner_dim ** 0.5
+        logits = torch.einsum('bmd,bnd->bmn', qw, kw) / self.backbone_model_config.hidden_size ** 0.5
         # bias (batch_size, ent_type*2, seq_len)
         bias = torch.einsum('bnh->bhn', self.dense_2(last_hidden_state)) / 2
         # print("bias", bias.shape)
@@ -166,8 +166,8 @@ class GPModel(nn.Module):
             else:
                 answer_type = "yes"
                 target_logits = yes_logits
-            idx = int(np.argmax(target_logits))
-            x, y = idx // target_logits.shape[1], idx % target_logits.shape[1]
+            max_flat_idx = int(np.argmax(target_logits))
+            x, y = max_flat_idx // target_logits.shape[1], max_flat_idx % target_logits.shape[1]
             answer = ipt["input_ids"][idx].cpu().numpy().tolist()[x:y + 1]
             answer = self.tokenizer.convert_tokens_to_string(self.tokenizer.convert_ids_to_tokens(answer))
             res.append([answer_type, answer])

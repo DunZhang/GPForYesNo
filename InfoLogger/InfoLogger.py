@@ -57,6 +57,7 @@ class InfoLogger():
                 target_logits = no_logits
             else:
                 target_logits = yes_logits
+            # print("np.max(target_logits)", np.max(target_logits))
             if np.max(target_logits) == 1:
                 idx = int(np.argmax(target_logits))
                 x, y = idx // target_logits.shape[1], idx % target_logits.shape[1]

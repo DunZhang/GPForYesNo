@@ -34,7 +34,7 @@ def collect_fn(batch):
         "input_ids": torch.LongTensor(input_ids),
         "attention_mask": torch.LongTensor(attention_mask),
         "token_type_ids": torch.LongTensor(token_type_ids),
-        "lable": label
+        "label": label
     }
     return ipt
 
@@ -89,13 +89,23 @@ class GPDataSet(Dataset):
             answer_id = self.tokenizer.encode(answer, add_special_tokens=False)
             doc_id = doc_left_id + answer_id + doc_right_id + [self.tokenizer.sep_token_id]
             start, end = len(doc_left_id), len(doc_left_id) + len(answer_id) - 1
+            if len(doc_id) + len(query_id) > self.conf.max_len:
+                if len(answer_id) + len(query_id) < self.conf.max_len:
+                    remaining_len = self.conf.max_len - len(answer_id) - len(query_id)
+                    doc_left_id = doc_left_id[-1 * remaining_len // 2:]
+                    doc_right_id = doc_right_id[:remaining_len // 2]
+                    doc_id = doc_left_id + answer_id + doc_right_id + [self.tokenizer.sep_token_id]
+                    start, end = len(doc_left_id), len(doc_left_id) + len(answer_id) - 1
+                else:
+                    doc_id = doc_id[:self.conf.max_len - len(query_id) - 3]
+                    doc_id.append(self.tokenizer.sep_token_id)
+                    start, end = len(doc_id) - 1, len(doc_id) - 1
 
         else:
-            doc_id = self.tokenizer.encode(doc, add_special_tokens=False) + [self.tokenizer.sep_token_id]
-            start, end = len(doc_id) - 1, len(doc_id) - 1
-        if len(query_id) + len(doc_id) > self.conf.max_len:
-            doc_id = doc_id[:self.conf.max_len - len(query_id)]
+            doc_id = self.tokenizer.encode(doc, add_special_tokens=False)
+            doc_id = doc_id[:self.conf.max_len - len(query_id) - 3]
             doc_id.append(self.tokenizer.sep_token_id)
+            start, end = len(doc_id) - 1, len(doc_id) - 1
 
         start, end = start + len(query_id), end + len(query_id)
         return query_id, doc_id, start, end, answer_type

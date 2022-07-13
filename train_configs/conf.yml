@@ -1,18 +1,18 @@
 batch_size: 32
-data_dir: ./model_data/sim_data
+data_dir: ./data_model
 device: '0'
 ent_type_size: 2
 eval_metrics:
 - acc
-eval_step: 1000
+eval_step: 500
 log_step: 20
 lr: 5.0e-05
-max_len: 64
-num_epoch: 10
+max_len: 500
+num_epoch: 20
 output_dir: ./output/test1
-pretrained_model_dir: ''
+pretrained_model_dir: './data_model/en_bert_base'
 print_input_step: 200
 save_times_per_epoch: -1
-seed: ''
+seed: 123
 use_rope: true
 warmup_proportion: 0.1

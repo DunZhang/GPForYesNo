@@ -67,9 +67,8 @@ class Trainer():
     def get_data_loader(self) -> DataLoader:
         self.tokenizer = BertTokenizer.from_pretrained(self.conf.pretrained_model_dir)
         # train data
-        train_dataset = VectorDataSet(
-            conf=self.conf, data_path=os.path.join(self.conf.data_dir, "News2022_train.tsv"), tokenizer=self.tokenizer,
-            docid2doc=self.docid2doc)
+        train_dataset = GPDataSet(
+            conf=self.conf, data_path=join(self.conf.data_dir, "train.json"), tokenizer=self.tokenizer)
         sampler = RandomSampler(data_source=train_dataset)
         train_data_loader = DataLoader(dataset=train_dataset, batch_size=self.conf.batch_size, sampler=sampler,
                                        num_workers=2, collate_fn=collect_fn, pin_memory=True, drop_last=True)
@@ -81,7 +80,7 @@ class Trainer():
         return model
 
     def get_evaluator(self) -> Evaluator:
-        return Evaluator(conf=self.conf, data_path=None)
+        return Evaluator(conf=self.conf, data_path=join(self.conf.data_dir, "dev.json"))
 
     def get_loss_model(self) -> LossModel:
         return LossModel(conf=self.conf)
@@ -134,7 +133,7 @@ class Trainer():
             for step, ipt in enumerate(self.train_data_loader):
                 global_step += 1
                 model_output = self.model(ipt)
-                loss = self.loss_model(model_output)
+                loss = self.loss_model(ipt, model_output)
                 loss.backward()
                 # 梯度裁剪
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)

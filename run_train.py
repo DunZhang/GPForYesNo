@@ -1,6 +1,7 @@
 import logging
 import os
-
+import transformers
+transformers.logging.set_verbosity_error()
 logging.basicConfig(level=logging.INFO)
 from Config.TrainConfig import TrainConfig
 from Trainer.Trainer import Trainer
